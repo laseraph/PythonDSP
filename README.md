@@ -107,14 +107,14 @@ import numpy as np
 import matplotlib.pyplot as plt  
 from sigfunctions import stepseq, sigadd
 
-\# 1\. Generate two step sequences  
-n1, x1 \= stepseq(0, 10, 0\)  
-n2, x2 \= stepseq(5, 15, 0\)
+# 1. Generate two step sequences  
+n1, x1 = stepseq(0, 10, 0\)  
+n2, x2 = stepseq(5, 15, 0\)
 
-\# 2\. Add them together (handles different time ranges automatically)  
-y, n \= sigadd(x1, n1, x2, n2)
+# 2. Add them together (handles different time ranges automatically)  
+y, n = sigadd(x1, n1, x2, n2)
 
-\# 3\. Plot  
+# 3. Plot  
 plt.stem(n, y)  
 plt.title("Signal Addition Example")  
 plt.xlabel("n")  
