@@ -243,3 +243,47 @@ def approxCTFT(x,t_start, t_end, num_points, w_max, delta):
     X = np.array([np.sum(x*np.exp(-1j*omega*n))*dt for omega in W])
 
     return t, x, W, X
+
+def DFT(xn,N):
+    '''
+        Computes Discrete Fourier Transform using list comprehension.
+    
+    Call the function DFT by declaring:
+        xn (N-point finite-duration sequence)
+        N (Length of DFT)
+        
+    Return values:
+        Xk (DFT coeff. array over 0 <= k <= N-1)
+    '''
+
+    # Create the time vector n
+    n = np.arange(N)
+
+    xn = np.array(xn)
+    # If the length of the N-point finite sequence is less than N, pad 0's
+    if len(xn) < N:
+        xn = np.pad(xn, (0, N - len(xn)), 'constant')
+
+    # Solve the DFT
+    Xk = np.array([np.sum(xn*np.exp(-1j*2*np.pi*n*k/N)) for k in range(N)])
+
+    return Xk
+
+def IDFT(Xk,N):
+    '''
+    Call the function IDFT by declaring:
+    Xk (DFT coeff. array over 0 <= k <= N-1)
+    N (Length of DFT)
+        
+    Return values:
+    xn (N-point sequence over 0 <= n <= N-1)
+    '''
+
+    # Create the time vector n
+    k = np.arange(N)
+
+    # Solve the IDFT
+    xn = np.array([1/N*np.sum(Xk*np.exp(1j*2*np.pi*k*n/N)) for n in range(N)])
+
+    return xn
+
