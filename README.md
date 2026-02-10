@@ -11,15 +11,17 @@ To run the scripts and functions in this repository, you will need:
 * **Matplotlib**: For plotting and visualizing signals.
 
 To install the required libraries, run:  
+```python
 pip install numpy matplotlib
-
+```
 ## **🚀 Usage**
 
 Import the functions from the main module sigfunctions.py into your script:  
+```python
 import numpy as np  
 import matplotlib.pyplot as plt  
 from sigfunctions import stepseq, sigshift, sigadd
-
+```
 ## **📚 Function Reference**
 
 ### **Signal Generation**
@@ -100,6 +102,7 @@ Numerical approximation of the Continuous-Time Fourier Transform.
 
 ## **📝 Example**
 
+```python
 import numpy as np  
 import matplotlib.pyplot as plt  
 from sigfunctions import stepseq, sigadd
@@ -116,4 +119,5 @@ plt.stem(n, y)
 plt.title("Signal Addition Example")  
 plt.xlabel("n")  
 plt.ylabel("Amplitude")  
-plt.show()  
+plt.show()
+```
