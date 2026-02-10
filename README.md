@@ -100,6 +100,18 @@ Numerical approximation of the Continuous-Time Fourier Transform.
 
 * **Returns:** t (time vector), x (sampled signal), W (freq vector), Xa (approximate CTFT)
 
+#### **DFT(xn, N)**
+
+Computes the Discrete Fourier Transform.$.
+
+* **Returns:** Xk (DFT coeff. array over $0 \leq k \leq N-1$)
+
+#### **IDFT(Xn, N)**
+
+Computes the Discrete Fourier Transform.$.
+
+* **Returns:** xn (N-point sequence over $0 \leq n \leq N-1$)
+
 ## **📝 Example**
 
 ```python
@@ -108,8 +120,8 @@ import matplotlib.pyplot as plt
 from sigfunctions import stepseq, sigadd
 
 # 1. Generate two step sequences  
-n1, x1 = stepseq(0, 10, 0\)  
-n2, x2 = stepseq(5, 15, 0\)
+n1, x1 = stepseq(0, 10, 0)  
+n2, x2 = stepseq(5, 15, 0)
 
 # 2. Add them together (handles different time ranges automatically)  
 y, n = sigadd(x1, n1, x2, n2)
