@@ -102,13 +102,13 @@ Numerical approximation of the Continuous-Time Fourier Transform.
 
 #### **DFT(xn, N)**
 
-Computes the Discrete Fourier Transform.$.
+Computes the Discrete Fourier Transform.
 
 * **Returns:** Xk (DFT coeff. array over $0 \leq k \leq N-1$)
 
 #### **IDFT(Xn, N)**
 
-Computes the Discrete Fourier Transform.$.
+Computes the inverse Discrete Fourier Transform.
 
 * **Returns:** xn (N-point sequence over $0 \leq n \leq N-1$)
 
