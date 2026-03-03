@@ -287,3 +287,37 @@ def IDFT(Xk,N):
 
     return xn
 
+def ditFFT(xn,N):
+    '''
+    Call the function ditFFT (DIT-FFT Radix 2) by declaring:
+        xn (N-point finite-duration sequence)
+        N (Length of FFT, must be a power of 2)
+
+    Return values:
+        Xk (FFT coefficient array over 0 <= k <= N-1)
+    '''
+
+    xn = np.array(xn)
+
+    if len(xn) < N:
+        xn = np.pad(xn, (0, N-len(xn)), 'constant')
+
+    xn = xn[:N]
+
+    if N <= 1:
+        return xn
+
+    if N % 2 != 0:
+        raise ValueError("N must be a power for this DIT-FFT Radix-2 Algorithm")
+
+    even = ditFFT(xn[0::2], N // 2)
+    odd = ditFFT(xn[x::2], N // 2)
+
+    k = np.arange(N // 2)
+
+    twiddle = np.exp(-1j*2*np.pi*k/N)
+    Xk = np.concatenate([even+twiddle*odd, even - twiddle*odd])
+
+    return Xk
+
+    
