@@ -1,5 +1,6 @@
 import numpy as np
 import matplotlib.pyplot as plt
+from scipy.signal import lfilter
 
 def impseq(n1,n2,n0):
     '''
@@ -320,4 +321,319 @@ def ditFFT(xn,N):
 
     return Xk
 
+def dfs(xn, N):
+    '''
+    Computes Discrete Fourier Series Coefficients
     
+    Call the function dfs by declaring:
+        xn (One period of periodic signal over 0 <= n <= N-1)
+        N (Fundamental period of xn)
+        
+    Return values:
+        Xk (DFS coeff. array over 0 <= k <= N-1)
+    '''
+    # Create row vectors for n and k
+    n = np.arange(0, N)
+    k = np.arange(0, N)
+    
+    # Wn factor
+    WN = np.exp(-1j * 2 * np.pi / N)
+    
+    # Creates an N by N matrix of nk values using outer product (n' * k in MATLAB)
+    nk = np.outer(n, k)
+    
+    # DFS matrix
+    WNnk = WN ** nk
+    
+    # Convert xn to a numpy array explicitly for matrix multiplication
+    xn = np.array(xn)
+    
+    # Row vector for DFS coefficients (equivalent to xn * WNnk in MATLAB)
+    Xk = np.dot(xn, WNnk)
+    
+    return Xk
+
+def idfs(Xk, N):
+    '''
+    Computes Inverse Discrete Fourier Series
+    
+    Call the function idfs by declaring:
+        Xk (DFS coeff. array over 0 <= k <= N-1)
+        N (Fundamental period of Xk)
+        
+    Return values:
+        xn (One period of periodic signal over 0 <= n <= N-1)
+    '''
+    # Create row vectors for n and k
+    n = np.arange(0, N)
+    k = np.arange(0, N)
+    
+    # Wn factor
+    WN = np.exp(-1j * 2 * np.pi / N)
+    
+    # Creates an N by N matrix of nk values using outer product (n' * k in MATLAB)
+    nk = np.outer(n, k)
+    
+    # IDFS matrix (using element-wise negative exponent)
+    WNnk = WN ** (-nk)
+    
+    # Convert Xk to a numpy array explicitly for matrix multiplication
+    Xk = np.array(Xk)
+    
+    # Row vector for IDFS values scaled by 1/N
+    xn = np.dot(Xk, WNnk) / N
+    
+    return xn
+
+def circevod(x):
+    '''
+    Signal decomposition into circular-even and circular-odd parts
+    
+    Call the function circevod by declaring:
+        x (discrete function x[n])
+        
+    Return values:
+        xec (circular-even part)
+        xoc (circular-odd part)
+    '''
+    # Verify if the sequence is real
+    if np.any(np.imag(x) != 0):
+        raise ValueError('x is not a real sequence')
+        
+    # Vector length and time index array
+    N = len(x)
+    n = np.arange(0, N)
+    
+    # Convert x to a numpy array explicitly to handle vectorized math
+    x = np.array(x)
+    
+    # Circular folding index sequence: x((-n))_N
+    fold_idx = np.mod(-n, N)
+    
+    # Compute circular-even and circular-odd sequences
+    xec = 0.5 * (x + x[fold_idx])
+    xoc = 0.5 * (x - x[fold_idx])
+    
+    return xec, xoc
+
+def cirshftt(x, m, N):
+    '''
+    Circular shift of m samples wrt size N in sequence x: (time domain)
+    
+    Call the function cirshftt by declaring:
+        x (input sequence of length <= N)
+        m (sample shift)
+        N (size of circular buffer)
+        
+    Return values:
+        y (output sequence containing the circular shift)
+    '''
+    # Check for length of x
+    if len(x) > N:
+        raise ValueError('N must be >= the length of x')
+        
+    # Convert x to a numpy array explicitly
+    x = np.array(x)
+    
+    # If the length of the finite sequence is less than N, pad with zeros
+    if len(x) < N:
+        x = np.pad(x, (0, N - len(x)), 'constant')
+        
+    # Create time index array over 0 <= n <= N-1
+    n = np.arange(0, N)
+    
+    # Method: y(n) = x((n-m) mod N)
+    shift_idx = np.mod(n - m, N)
+    y = x[shift_idx]
+    
+    return y
+
+def circonvt(x1, x2, N):
+    '''
+    N-point circular convolution between x1 and x2: (time-domain)
+    
+    Call the function circonvt by declaring:
+        x1 (input sequence of length N1 <= N)
+        x2 (input sequence of length N2 <= N)
+        N (size of circular buffer)
+        
+    Return values:
+        y (output sequence containing the circular convolution)
+    '''
+    # Check for length of x1
+    if len(x1) > N:
+        raise ValueError('N must be >= the length of x1')
+        
+    # Check for length of x2
+    if len(x2) > N:
+        raise ValueError('N must be >= the length of x2')
+        
+    # Convert inputs to numpy arrays explicitly
+    x1 = np.array(x1)
+    x2 = np.array(x2)
+    
+    # Pad sequences with zeros if their lengths are less than N
+    if len(x1) < N:
+        x1 = np.pad(x1, (0, N - len(x1)), 'constant')
+    if len(x2) < N:
+        x2 = np.pad(x2, (0, N - len(x2)), 'constant')
+        
+    # Establish time index array over 0 <= m <= N-1
+    m = np.arange(0, N)
+    
+    # Circularly fold x2 sequence: x2((-m) mod N)
+    fold_idx = np.mod(-m, N)
+    x2 = x2[fold_idx]
+    
+    # Initialize the transformation matrix H
+    H = np.zeros((N, N))
+    
+    # Populate matrix rows using our cirshftt function
+    for n in range(0, N):
+        H[n, :] = cirshftt(x2, n, N)
+        
+    # Calculate convolution using row vector matrix multiplication (x1 * H')
+    y = np.dot(x1, H.T)
+    
+    return y
+
+def hsolpsav(x, h, N):
+    '''
+    High-speed Overlap-Save method of block convolutions using FFT
+    
+    Call the function hsolpsav by declaring:
+        x (input sequence)
+        h (impulse response)
+        N (block length, will be automatically forced/checked as a power of two)
+        
+    Return values:
+        y (output convolution sequence)
+    '''
+    # Ensure block length N is a power of two
+    N = int(2**np.ceil(np.log2(N)))
+    
+    Lenx = len(x)
+    M = len(h)
+    M1 = M - 1
+    L = N - M1
+    
+    # Compute the N-point DFT of the filter impulse response
+    # (Using your library's native DFT function or standard np.fft.fft)
+    h_fft = np.fft.fft(h, N)
+    
+    # Explicitly convert x to a numpy array for vector manipulations
+    x = np.array(x)
+    
+    # Pre-append M1 zeros and post-append N-1 zeros to frame the input signal
+    x = np.concatenate([np.zeros(M1), x, np.zeros(N - 1)])
+    
+    # Calculate the number of blocks needed
+    K = int(np.floor((Lenx + M1 - 1) / L))
+    
+    # Initialize the block storage matrix Y with dimensions (K + 1, N)
+    Y = np.zeros((K + 1, N))
+    
+    # Block processing loop
+    for k in range(0, K + 1):
+        # Extract an N-point block from the padded input array
+        xk = np.fft.fft(x[k*L : k*L + N])
+        
+        # Circular convolution via element-wise product followed by IDFT
+        Y[k, :] = np.real(np.fft.ifft(xk * h_fft))
+        
+    # Discard the first M1 (corrupted) elements of each block 
+    # and flatten the valid regions into a single 1D row vector output
+    Y_valid = Y[:, M1:N]
+    y = Y_valid.flatten()
+    
+    return y
+
+def dir2cas(b, a):
+    '''
+    DIRECT-form to CASCADE-form conversion
+    
+    Call the function dir2cas by declaring:
+        b (numerator polynomial coefficients of DIRECT form)
+        a (denominator polynomial coefficients of DIRECT form)
+        
+    Return values:
+        b0 (gain coefficient)
+        B (K by 3 matrix of real coefficients containing bk's)
+        A (K by 3 matrix of real coefficients containing ak's)
+    '''
+    # Compute gain coefficient b0
+    b0 = b[0]
+    b = np.array(b, dtype=complex) / b0
+    
+    a0 = a[0]
+    a = np.array(a, dtype=complex) / a0
+    
+    b0 = b0 / a0
+    
+    M = len(b)
+    N = len(a)
+    
+    # Equalize lengths of polynomial arrays
+    if N > M:
+        b = np.pad(b, (0, N - M), 'constant')
+    elif M > N:
+        a = np.pad(a, (0, M - N), 'constant')
+        N = M
+
+    K = N // 2
+    B = np.zeros((K, 3))
+    A = np.zeros((K, 3))
+    
+    if K * 2 == N:
+        b = np.append(b, 0.0)
+        a = np.append(a, 0.0)
+        
+    # Helper lambda to replicate MATLAB's cplxpair behavior 
+    # (groups complex conjugate pairs together, real numbers at the end)
+    def cplxpair_python(roots):
+        # Sort primarily by real part, secondarily by imaginary part
+        return roots[np.lexsort((np.imag(roots), np.real(roots)))]
+
+    broots = cplxpair_python(np.roots(b))
+    aroots = cplxpair_python(np.roots(a))
+    
+    # Group roots pairwise into second-order sections
+    for i in range(0, 2 * K, 2):
+        Brow = broots[i : i + 2]
+        # np.poly generates polynomial coefficients from roots
+        Brow_poly = np.real(np.poly(Brow))
+        B[i // 2, :] = Brow_poly
+        
+        Arow = aroots[i : i + 2]
+        Arow_poly = np.real(np.poly(Arow))
+        A[i // 2, :] = Arow_poly
+        
+    return b0, B, A
+
+
+def casfiltr(b0, B, A, x):
+    '''
+    CASCADE form realization of IIR and FIR filters
+    
+    Call the function casfiltr by declaring:
+        b0 (gain coefficient of CASCADE form)
+        B (K by 3 matrix of real coefficients containing bk's)
+        A (K by 3 matrix of real coefficients containing ak's)
+        x (input sequence)
+        
+    Return values:
+        y (output sequence)
+    '''
+    K, L = B.shape
+    N = len(x)
+    
+    # w matrix tracks intermediary filtering steps across rows
+    w = np.zeros((K + 1, N))
+    w[0, :] = x
+    
+    # Pass the signal through each second-order section consecutively
+    for i in range(0, K):
+        w[i + 1, :] = lfilter(B[i, :], A[i, :], w[i, :])
+        
+    y = b0 * w[K, :]
+    return y
